@@ -306,7 +306,9 @@ export class ToolRegistry {
     this.tools.forEach((tool) => {
       const schema = tool.schema;
       const parameters = lowercaseSchemaTypes(schema.parameters);
-      const parametersJson = lowercaseSchemaTypes(schema.parametersJsonSchema);
+      const parametersJson = lowercaseSchemaTypes(
+        schema.parametersJsonSchema as Schema | boolean | undefined,
+      );
       declarations.push({
         ...schema,
         parameters: parameters as Schema | undefined,
