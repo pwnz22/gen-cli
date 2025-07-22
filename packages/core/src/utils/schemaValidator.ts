@@ -26,7 +26,7 @@ export class SchemaValidator {
     if (typeof data !== 'object' || data === null) {
       return 'Value of params must be an object';
     }
-    const validate = ajValidator.compile(this.toObjectSchema(schema));
+    const validate = ajValidator.compile(this.toJsonSchema(schema));
     const valid = validate(data);
     if (!valid && validate.errors) {
       return ajValidator.errorsText(validate.errors, { dataVar: 'params' });
@@ -39,18 +39,18 @@ export class SchemaValidator {
    * This is necessary because it represents Types as an Enum (with
    * UPPERCASE values) and minItems and minLength as strings, when they should be numbers.
    */
-  private static toObjectSchema(schema: Schema): object {
+  static toJsonSchema(schema: Schema): object {
     const newSchema: Record<string, unknown> = { ...schema };
     if (newSchema.anyOf && Array.isArray(newSchema.anyOf)) {
-      newSchema.anyOf = newSchema.anyOf.map((v) => this.toObjectSchema(v));
+      newSchema.anyOf = newSchema.anyOf.map((v) => this.toJsonSchema(v));
     }
     if (newSchema.items) {
-      newSchema.items = this.toObjectSchema(newSchema.items);
+      newSchema.items = this.toJsonSchema(newSchema.items);
     }
     if (newSchema.properties && typeof newSchema.properties === 'object') {
       const newProperties: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(newSchema.properties)) {
-        newProperties[key] = this.toObjectSchema(value as Schema);
+        newProperties[key] = this.toJsonSchema(value as Schema);
       }
       newSchema.properties = newProperties;
     }

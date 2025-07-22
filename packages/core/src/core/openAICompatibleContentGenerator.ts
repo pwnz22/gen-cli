@@ -9,12 +9,14 @@ import {
   Part,
   ContentListUnion,
   PartUnion,
+  Schema,
 } from '@google/genai';
 import OpenAI from 'openai';
 import { ContentGenerator } from './contentGenerator.js';
 import { jsonrepair } from 'jsonrepair';
 
 import { reportError } from '../utils/errorReporting.js';
+import { SchemaValidator } from '../utils/schemaValidator.js';
 
 export function baseURL(): string {
   return process.env.SILICONFLOW_BASE_URL || 'https://api.siliconflow.cn';
@@ -235,8 +237,9 @@ export class OpenAICompatibleContentGenerator implements ContentGenerator {
                 function: {
                   name: func.name,
                   description: func.description || '',
-                  parameters:
-                    (func.parameters as Record<string, unknown>) || {},
+                  parameters: SchemaValidator.toJsonSchema(
+                    func.parameters as unknown as Schema,
+                  ),
                 },
               };
             }) || []
