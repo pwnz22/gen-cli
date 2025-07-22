@@ -304,7 +304,14 @@ export class ToolRegistry {
   getFunctionDeclarations(): FunctionDeclaration[] {
     const declarations: FunctionDeclaration[] = [];
     this.tools.forEach((tool) => {
-      declarations.push(tool.schema);
+      const schema = tool.schema;
+      const parameters = lowercaseSchemaTypes(schema.parameters);
+      const parametersJson = lowercaseSchemaTypes(schema.parametersJsonSchema);
+      declarations.push({
+        ...schema,
+        parameters: parameters as Schema | undefined,
+        parametersJsonSchema: parametersJson as Schema | undefined,
+      });
     });
     return declarations;
   }
@@ -354,6 +361,38 @@ export class ToolRegistry {
  */
 export function sanitizeParameters(schema?: Schema) {
   _sanitizeParameters(schema, new Set<Schema>());
+}
+
+function lowercaseSchemaTypes(schema?: Schema | boolean): Schema | boolean | undefined {
+  if (!schema || typeof schema === 'boolean') {
+    return schema;
+  }
+  const newSchema: Record<string, unknown> = { ...schema };
+  if (newSchema.anyOf && Array.isArray(newSchema.anyOf)) {
+    newSchema.anyOf = newSchema.anyOf.map((v) =>
+      typeof v === 'boolean' ? v : lowercaseSchemaTypes(v as Schema),
+    );
+  }
+  if (newSchema.items) {
+    newSchema.items = lowercaseSchemaTypes(newSchema.items as Schema) as Schema;
+  }
+  if (newSchema.properties && typeof newSchema.properties === 'object') {
+    const newProps: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(newSchema.properties)) {
+      newProps[key] = lowercaseSchemaTypes(value as Schema);
+    }
+    newSchema.properties = newProps;
+  }
+  if (newSchema.type) {
+    newSchema.type = String(newSchema.type).toLowerCase();
+  }
+  if (newSchema.minItems) {
+    newSchema.minItems = Number(newSchema.minItems);
+  }
+  if (newSchema.minLength) {
+    newSchema.minLength = Number(newSchema.minLength);
+  }
+  return newSchema as Schema;
 }
 
 /**
